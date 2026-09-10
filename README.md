@@ -6,6 +6,17 @@ This plugin connects the hosted Mnemoverse memory server over MCP and adds the d
 
 ## Install
 
+One line, no directory and no review queue:
+
+```
+/plugin marketplace add mnemoverse/claude-plugin
+/plugin install mnemoverse@mnemoverse
+```
+
+The first command registers this repository as a plugin marketplace; the second installs the plugin from it. Updates arrive with `/plugin marketplace update mnemoverse`.
+
+## Install
+
 From the community marketplace (once the plugin is accepted there):
 
 ```
