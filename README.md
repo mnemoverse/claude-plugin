@@ -81,6 +81,8 @@ Both files point at the same server, but each is read by a different host with i
 
 Issues in this repository, or [support@mnemoverse.com](mailto:support@mnemoverse.com).
 
+The open-source MCP server package (MIT) lives at [mnemoverse/mcp-memory-server](https://github.com/mnemoverse/mcp-memory-server). A star there helps other builders find the project.
+
 ## License
 
 Plugin: MIT. The bundled `agent-memory-discipline` skill is CC0-1.0 and lives at [mnemoverse/agent-memory-discipline](https://github.com/mnemoverse/agent-memory-discipline).
