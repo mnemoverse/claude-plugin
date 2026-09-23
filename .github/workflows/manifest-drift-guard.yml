@@ -1,0 +1,19 @@
+name: Manifest drift guard
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Catches drift landing in cursor-plugin or gemini-extension (this repo
+    # has no push/PR trigger from those repos) within a day.
+    - cron: "17 6 * * *"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/check-manifest-drift.mjs

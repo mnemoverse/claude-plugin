@@ -1,0 +1,25 @@
+{
+  "file": "mcp.json",
+  "host": "Agent Plugins 1.0.0 (agent-plugins.org)",
+  "verifiedAgainst": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "verifiedOn": "2026-09-23",
+  "checks": [
+    {
+      "name": "$schema present",
+      "kind": "present",
+      "path": ["$schema"]
+    },
+    {
+      "name": "type is exactly 'streamable-http'",
+      "kind": "equals",
+      "path": ["mcpServers", "mnemoverse", "type"],
+      "expect": "streamable-http"
+    },
+    {
+      "name": "entry keys subset of {type,url,headers}",
+      "kind": "keysSubset",
+      "path": ["mcpServers", "mnemoverse"],
+      "allowed": ["type", "url", "headers"]
+    }
+  ]
+}
