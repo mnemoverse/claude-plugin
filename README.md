@@ -75,7 +75,7 @@ More: [docs](https://mnemoverse.com/docs/api/remote-mcp-server).
 
 ## Support
 
-Issues in this repository, or [helloworld@uinside.org](mailto:helloworld@uinside.org).
+Issues in this repository, or [support@mnemoverse.com](mailto:support@mnemoverse.com).
 
 ## License
 

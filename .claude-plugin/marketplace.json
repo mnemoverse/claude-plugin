@@ -2,7 +2,7 @@
   "name": "mnemoverse",
   "owner": {
     "name": "Mnemoverse",
-    "email": "helloworld@uinside.org",
+    "email": "hello@mnemoverse.com",
     "url": "https://mnemoverse.com"
   },
   "metadata": {
@@ -17,7 +17,7 @@
       "version": "1.0.0",
       "author": {
         "name": "Mnemoverse",
-        "email": "helloworld@uinside.org",
+        "email": "hello@mnemoverse.com",
         "url": "https://mnemoverse.com"
       },
       "homepage": "https://mnemoverse.com/docs/api/remote-mcp-server",
