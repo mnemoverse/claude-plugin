@@ -51,7 +51,7 @@ The server at `https://mcp.mnemoverse.com/mcp` uses OAuth 2.1 with PKCE. On firs
 
 **Ten tools** from the remote server: `memory_read`, `memory_write`, `memory_list_recent`, `memory_stats`, `memory_feedback`, four shared-room tools (`memory_create_room`, `memory_invite_to_room`, `memory_join_room`, `memory_list_rooms`), and `vault_list` (aliases only, values are never returned).
 
-The two delete tools available in the [local package](https://mnemoverse.com/docs/api/mcp-server) are deliberately not exposed over the remote connector, so a one-click sign-in can never wipe memory.
+Neither the remote connector nor the [local package](https://mnemoverse.com/docs/api/mcp-server) has a delete tool, so a one-click sign-in can never wipe memory.
 
 ## Try these
 
