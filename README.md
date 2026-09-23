@@ -73,6 +73,10 @@ Memory content lives in your Mnemoverse account. Privacy policy: [mnemoverse.com
 
 More: [docs](https://mnemoverse.com/docs/api/remote-mcp-server).
 
+## Why `.mcp.json` says `http` and `mcp.json` says `streamable-http`
+
+Both files point at the same server, but each is read by a different host with its own vocabulary for the transport. `.mcp.json` is Claude Code's own project MCP config, where `type: "http"` is the canonical value ([code.claude.com/docs/en/mcp.md](https://code.claude.com/docs/en/mcp.md)); `streamable-http` is accepted there only as an alias. Root `mcp.json` follows the Agent Plugins 1.0.0 schema instead, whose `type` enum is `stdio | streamable-http | sse` and rejects `"http"` outright ([agent-plugins.org/schemas/1.0.0/mcp.schema.json](https://agent-plugins.org/schemas/1.0.0/mcp.schema.json)). `kimi.plugin.json` and the Cursor/Gemini manifests add two more dialects again (see `scripts/fixtures/`). `scripts/check-manifest-drift.mjs` guards all eight declarations of the server URL against drift while keeping each file's dialect intact — see its CI job, `manifest-drift-guard.yml`, for what it checks.
+
 ## Support
 
 Issues in this repository, or [support@mnemoverse.com](mailto:support@mnemoverse.com).
