@@ -5,9 +5,10 @@
   "verifiedOn": "2026-09-23",
   "checks": [
     {
-      "name": "$schema present",
-      "kind": "present",
-      "path": ["$schema"]
+      "name": "$schema is the canonical Agent Plugins 1.0.0 plugin schema identifier",
+      "kind": "equals",
+      "path": ["$schema"],
+      "expect": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
     },
     {
       "name": "name present",

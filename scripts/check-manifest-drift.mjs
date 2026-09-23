@@ -79,15 +79,19 @@ function runCheck(data, check) {
         ? { pass: true, detail: "absent" }
         : { pass: false, detail: `unexpectedly present: ${JSON.stringify(val)}` };
     case "keysSubset": {
-      if (val == null || typeof val !== "object") return { pass: false, detail: "target is not an object" };
+      if (val === null || typeof val !== "object" || Array.isArray(val)) {
+        return { pass: false, detail: "target is not an object" };
+      }
       const extra = Object.keys(val).filter((k) => !check.allowed.includes(k));
       return extra.length === 0
         ? { pass: true, detail: `keys ⊆ {${check.allowed.join(",")}}` }
         : { pass: false, detail: `unexpected keys: ${extra.join(",")}` };
     }
     case "requiredPresent": {
-      const obj = val || {};
-      const missing = check.required.filter((k) => !(k in obj));
+      if (val === null || typeof val !== "object" || Array.isArray(val)) {
+        return { pass: false, detail: "target is not an object" };
+      }
+      const missing = check.required.filter((k) => !Object.hasOwn(val, k));
       return missing.length === 0
         ? { pass: true, detail: "all required present" }
         : { pass: false, detail: `missing: ${missing.join(",")}` };
@@ -172,7 +176,51 @@ function printTable(rows) {
   for (const row of rows) console.log(fmt(row));
 }
 
-main().catch((err) => {
-  console.error("Unexpected error:", err);
-  process.exit(1);
-});
+// `--selftest` exercises runCheck() against malformed inputs (a string, an
+// array, null) that a remote host could plausibly return as valid JSON,
+// instead of the well-formed objects every real manifest happens to be.
+// It asserts requiredPresent/keysSubset FAIL cleanly with "target is not an
+// object" rather than throwing (the `in` operator throws on a non-object
+// right-hand side), and that a real object still passes normally.
+function selftest() {
+  const cases = [
+    { label: "requiredPresent rejects a bare string", data: "invalid",
+      check: { kind: "requiredPresent", required: ["name"] }, expectPass: false },
+    { label: "requiredPresent rejects an array", data: ["invalid"],
+      check: { kind: "requiredPresent", required: ["name"] }, expectPass: false },
+    { label: "requiredPresent rejects null", data: null,
+      check: { kind: "requiredPresent", required: ["name"] }, expectPass: false },
+    { label: "requiredPresent accepts a real object", data: { name: "x" },
+      check: { kind: "requiredPresent", required: ["name"] }, expectPass: true },
+    { label: "keysSubset rejects a bare string", data: "invalid",
+      check: { kind: "keysSubset", allowed: ["name"] }, expectPass: false },
+    { label: "keysSubset rejects an array", data: ["invalid"],
+      check: { kind: "keysSubset", allowed: ["name"] }, expectPass: false },
+    { label: "keysSubset accepts a real object", data: { name: "x" },
+      check: { kind: "keysSubset", allowed: ["name"] }, expectPass: true },
+  ];
+
+  let ok = true;
+  for (const c of cases) {
+    let pass, detail;
+    try {
+      ({ pass, detail } = runCheck(c.data, c.check));
+    } catch (err) {
+      pass = false;
+      detail = `threw: ${err.message}`;
+    }
+    const result = pass === c.expectPass ? "PASS" : "FAIL";
+    if (result === "FAIL") ok = false;
+    console.log(`${result}  ${c.label} -> ${detail}`);
+  }
+  process.exit(ok ? 0 : 1);
+}
+
+if (process.argv.includes("--selftest")) {
+  selftest();
+} else {
+  main().catch((err) => {
+    console.error("Unexpected error:", err);
+    process.exit(1);
+  });
+}
