@@ -23,7 +23,7 @@ An expired token normally refreshes on the next tool call. If it does not, remov
 
 ## What the connection exposes
 
-Ten tools: read, write, newest-first listing, stats, usefulness feedback, four shared-room tools, and a vault alias listing. The two delete tools are deliberately not exposed over the remote connector, so a one-click sign-in can never wipe memory; deletion requires the local package or the REST API, documented at https://mnemoverse.com/docs/api/remote-mcp-server.
+The memory tools the remote server serves: read, write, newest-first listing, stats, usefulness feedback, shared rooms, and a vault alias listing; the current list is at https://mcp.mnemoverse.com/.well-known/mcp/server-card.json. There is no delete tool on the remote server or in the local package, so a one-click sign-in can never wipe memory; deletion is an administrative REST operation, documented at https://mnemoverse.com/docs/api/remote-mcp-server.
 
 ## Privacy
 
