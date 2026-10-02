@@ -1,6 +1,6 @@
 {
   "name": "mnemoverse",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Persistent memory for AI agents, shared across tools: write a memory in Kimi Code, recall it in Claude Code, Cursor, VS Code or any MCP client. Browser sign-in, no API key to paste.",
   "homepage": "https://mnemoverse.com/docs/api/remote-mcp-server",
   "license": "MIT",
