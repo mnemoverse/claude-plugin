@@ -15,16 +15,7 @@ One line, no directory and no review queue:
 
 The first command registers this repository as a plugin marketplace; the second installs the plugin from it. Updates arrive with `/plugin marketplace update mnemoverse`.
 
-## Install
-
-From the community marketplace (once the plugin is accepted there):
-
-```
-claude plugin marketplace add anthropics/claude-plugins-community
-claude plugin install mnemoverse@claude-community
-```
-
-Or try it directly from this repository:
+To try it from a local checkout of this repository instead:
 
 ```
 claude --plugin-dir ./
