@@ -1,5 +1,7 @@
 # Mnemoverse Memory
 
+[![HOL trust score](https://img.shields.io/endpoint?url=https%3A%2F%2Fhol.org%2Fapi%2Fregistry%2Fbadges%2Fplugin%3Fslug%3Dmnemoverse%252Fmnemoverse%26metric%3Dtrust%26style%3Dflat)](https://hol.org/registry/plugins/mnemoverse%2Fmnemoverse)
+
 Persistent memory for AI agents, shared across tools. One account gives Claude Code the same long-term memory it has in Cursor, VS Code, and any other MCP client: write a memory in one tool, recall it in another.
 
 This plugin connects the hosted Mnemoverse memory server over MCP and adds the discipline that makes memory actually get used: recall before acting, save durable decisions and corrections afterwards.
