@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Manifest drift guard.
 //
-// Eight MCP-server manifests, across five files in this repo and two more
+// Nine MCP-server manifests, across six files in this repo and two more
 // repos, all declare the same hosted server URL. Each host also mandates its
 // own dialect for the fields around that URL (see README.md, "Why .mcp.json
 // says http and mcp.json says streamable-http"). This script asserts both:
@@ -42,6 +42,9 @@ const manifests = [
   { file: "kimi.plugin.json", kind: "local", local: "kimi.plugin.json",
     fixture: "kimi-plugin-json.expected.json",
     urlPath: ["mcpServers", "mnemoverse", "url"] },
+  { file: "openclaw.plugin.json", kind: "local", local: "openclaw.plugin.json",
+    fixture: "openclaw-plugin-json.expected.json",
+    urlPath: null },
   { file: ".claude-plugin/plugin.json", kind: "local", local: ".claude-plugin/plugin.json",
     fixture: "claude-plugin-manifest.expected.json",
     urlPath: null },
