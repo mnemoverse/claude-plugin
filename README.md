@@ -54,7 +54,7 @@ The server at `https://mcp.mnemoverse.com/mcp` uses OAuth 2.1 with PKCE. Install
 
 The plugin stores only what you or Claude explicitly save through the memory tools: single facts, decisions, corrections. It does not record conversations, does not read your chat history, and the bundled skill explicitly refuses to persist secrets, API keys, passwords, payment data, or personal identifiers.
 
-Memory content lives in your Mnemoverse account. Privacy policy: [mnemoverse.com/privacy](https://mnemoverse.com/privacy).
+Memory content lives in your Mnemoverse account. Privacy policy: [mnemoverse.com/docs/legal/privacy-policy](https://mnemoverse.com/docs/legal/privacy-policy).
 
 ## Troubleshooting
 

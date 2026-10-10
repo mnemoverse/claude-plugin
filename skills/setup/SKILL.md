@@ -27,4 +27,4 @@ The memory tools the remote server serves: read, write, newest-first listing, st
 
 ## Privacy
 
-Memory content is stored in the user's Mnemoverse account and follows the privacy policy at https://mnemoverse.com/privacy. Never store secrets, API keys, passwords, payment data, or personal identifiers in memory regardless of backend.
+Memory content is stored in the user's Mnemoverse account and follows the privacy policy at https://mnemoverse.com/docs/legal/privacy-policy. Never store secrets, API keys, passwords, payment data, or personal identifiers in memory regardless of backend.
