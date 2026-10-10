@@ -25,7 +25,7 @@ claude --plugin-dir ./
 
 ## First run: sign in once, no API key
 
-The server at `https://mcp.mnemoverse.com/mcp` uses OAuth 2.1 with PKCE. On first use Claude Code opens a browser window; sign in to your Mnemoverse account (free tier at [console.mnemoverse.com](https://console.mnemoverse.com?utm_source=github&utm_medium=readme&utm_campaign=claude-plugin), no credit card) and grant the requested scopes, which include `memory:read` and `memory:write`. There is no API key to paste, and access can be revoked at any time from the console. The bundled `setup` skill walks Claude through this if anything goes wrong.
+The server at `https://mcp.mnemoverse.com/mcp` uses OAuth 2.1 with PKCE. Installing the plugin does not open anything by itself: run `/mcp`, select `mnemoverse` and choose Authenticate, then sign in to your Mnemoverse account in the browser (free tier at [console.mnemoverse.com](https://console.mnemoverse.com?utm_source=github&utm_medium=readme&utm_campaign=claude-plugin), no credit card) and grant the requested scopes, which include `memory:read` and `memory:write`. There is no API key to paste, and access can be revoked at any time from the console. The bundled `setup` skill walks Claude through this if anything goes wrong.
 
 ## What you get
 
@@ -44,8 +44,6 @@ The server at `https://mcp.mnemoverse.com/mcp` uses OAuth 2.1 with PKCE. On firs
 
 **The tools come from the remote server itself**: reading and writing memories, a newest-first listing, stats, usefulness feedback, shared rooms, and a vault alias listing (aliases only, values are never returned). The current list, with descriptions and schemas, is at the server's [card](https://mcp.mnemoverse.com/.well-known/mcp/server-card.json).
 
-Neither the remote connector nor the [local package](https://mnemoverse.com/docs/api/mcp-server) has a delete tool, so a one-click sign-in can never wipe memory.
-
 ## Try these
 
 1. `Remember that this project uses pnpm, not npm. We decided this after a lockfile conflict on 2026-08-01.`
@@ -60,7 +58,7 @@ Memory content lives in your Mnemoverse account. Privacy policy: [mnemoverse.com
 
 ## Troubleshooting
 
-- **No browser window on first use**: run `/mcp` to check server status, or re-add manually with `claude mcp add --transport http mnemoverse https://mcp.mnemoverse.com/mcp`.
+- **No sign-in prompt**: Claude Code does not open the browser by itself. Run `/mcp`, select `mnemoverse` and choose Authenticate. If the server is not listed, add it for all your projects with `claude mcp add --transport http --scope user mnemoverse https://mcp.mnemoverse.com/mcp`.
 - **`401` after it used to work**: the token expired; the next tool call normally refreshes it. If not, remove and re-add the server to re-run sign-in.
 - **`malformed_token` in logs**: something is sending an API key as a bearer token. The remote endpoint takes OAuth tokens only; API keys are for the [REST API](https://mnemoverse.com/docs/api/reference) and the local package.
 
