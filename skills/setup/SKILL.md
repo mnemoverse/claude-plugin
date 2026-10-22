@@ -9,7 +9,11 @@ This plugin talks to a hosted MCP server at `https://mcp.mnemoverse.com/mcp`. Au
 
 ## Check first
 
-Look at the available tools. If tools named `memory_read`, `memory_write`, `memory_stats` and similar are present, the connection already works; nothing to set up. Tell the user and stop.
+Look at the tools from this plugin's configured Mnemoverse server. Their presence confirms discovery, not authentication; similarly named tools from another server do not verify this connection.
+
+If its `memory_stats` tool is available, call it with `{}` using the existing account context. It is read-only and takes no parameters; do not invent a domain filter. Confirm the authenticated read connection only when the tool returns a successful stats result, with neither `isError: true` nor an error payload. A valid result with `memory_count: 0` and `domains: []` still confirms the connection. An empty response, error, or unavailable tool does not.
+
+Report only the connection status, without copying domains or memory content. Do not read stored memories, write synthetic memories, or change credentials, account, or access scopes to test the connection. This check verifies read access, not writes. If it succeeds, tell the user and stop.
 
 ## If the tools are missing
 
@@ -17,9 +21,15 @@ Look at the available tools. If tools named `memory_read`, `memory_write`, `memo
 2. The plugin declares the server, but installing it does not open a browser, and Claude Code does not start the sign-in by itself. Tell the user to run `/mcp`, select the Mnemoverse server (from this plugin it is listed as `plugin:mnemoverse:mnemoverse`) and choose Authenticate, then complete the sign-in in the browser and grant the requested scopes, which include `memory:read` and `memory:write`.
 3. If the server is not listed in `/mcp`, have the user add it for all their projects: `claude mcp add --transport http --scope user mnemoverse https://mcp.mnemoverse.com/mcp`, then authenticate from `/mcp` as in step 2. Without `--scope user` the server is added for the current project only.
 
-## If a call fails after it used to work
+After the tools become available, repeat the read-only check above before reporting success.
 
-An expired token normally refreshes on the next tool call. If it does not, have the user run `/mcp`, select the server and choose Re-authenticate.
+## If verification fails
+
+- An authentication error (such as 401) means verification failed. In Claude Code, have the user run `/mcp`, select the same server and choose Authenticate or Re-authenticate as offered.
+- A 403 means access was denied. Report the permission error; do not assume an expired token or broaden access to make the check pass.
+- A timeout, transport failure, or other error leaves the connection unverified. Report the actual error without declaring sign-in successful or credentials invalid.
+
+After authentication or recovery, repeat the read-only check before reporting success.
 
 ## What the connection exposes
 
