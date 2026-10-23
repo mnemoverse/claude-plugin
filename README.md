@@ -94,7 +94,7 @@ Memory content lives in your Mnemoverse account. Privacy policy: [mnemoverse.com
 
 - **No sign-in prompt**: Claude Code does not open the browser by itself. Run `/mcp`, select `plugin:mnemoverse:mnemoverse` and choose Authenticate. If the server is not listed, add it for all your projects with `claude mcp add --transport http --scope user mnemoverse https://mcp.mnemoverse.com/mcp`; it then appears in `/mcp` as `mnemoverse`, and you authenticate it the same way.
 - **`401` after it used to work**: the token expired; the next tool call normally refreshes it. If not, run `/mcp`, select the server and choose Re-authenticate.
-- **`malformed_token` in logs**: something is sending an API key as a bearer token. The remote endpoint takes OAuth tokens only; API keys are for the [REST API](https://mnemoverse.com/docs/api/reference) and the local package.
+- **`malformed_token` in logs**: the bearer token is neither an OAuth token from the sign-in nor a Mnemoverse API key, for example a key copied without its `mk_live_` prefix, or a placeholder left in a config. Since 2026-10-19 the remote endpoint accepts either: a host that cannot complete the sign-in can send an API key as `Authorization: Bearer mk_live_...` ([details](https://mnemoverse.com/docs/api/remote-mcp-server#with-an-api-key-instead-of-the-sign-in)). A revoked or unknown key gets `invalid_api_key` instead.
 
 More: [docs](https://mnemoverse.com/docs/api/remote-mcp-server).
 
