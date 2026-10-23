@@ -38,4 +38,4 @@ Never store passwords, API keys, tokens, payment data, MFA codes, government IDs
 
 The result says whether the memory was stored or refused. A write can be refused when memory already holds a statement too close to this one in the same domain. If the point really is the same, tell the user it is already known and do not reword it to force a duplicate in. If it is a correction or adds something new, write only what is different and lead with it, for example "Correction: staging deploys run on Thursday, not Friday"; if that is refused too, tell the user the correction was not saved.
 
-Confirm with the stored text word for word, so the user sees exactly what future sessions will recall.
+After a confirmed save, show the stored text word for word so the user can verify what was stored. This confirms storage only; do not promise that a later session will retrieve the entry or reproduce it verbatim.
