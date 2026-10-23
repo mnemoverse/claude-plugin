@@ -1,9 +1,21 @@
 ---
 name: memory-save
-description: "Saves a durable decision, preference, correction or lesson to long-term Mnemoverse memory as one self-contained fact, so later sessions and other connected tools can recall it. Use when the user says \"save this to memory\", \"note that we decided\", or \"that was wrong, it is actually\", or when a session settles something worth keeping. Never stores secrets."
+description: "Saves a durable decision, preference, correction or lesson to long-term Mnemoverse memory as one self-contained fact, so later sessions and other connected tools can recall it. Use when the user says \"save this to memory\", \"note that we decided\", \"save a checkpoint for a new chat\", or \"that was wrong, it is actually\", or when a session settles something worth keeping. Never stores secrets."
 ---
 
 # Save to memory
+
+## A project checkpoint for a new chat
+
+When the user explicitly requests a checkpoint or handoff for a later chat, use this path instead of the general fact-saving steps below. This is a compact, dated snapshot of one project, not permission to archive the conversation or change the general durable-memory policy.
+
+1. **Choose the project and scope.** Reuse the exact `domain` supplied by the user or established by an earlier successful project memory result. If it is unknown, `memory_stats({})` can help identify an existing domain; show only relevant candidates and ask when the project mapping is ambiguous. Do not fabricate a mapping from a similar name. For a new domain, propose a name and let the user choose it before writing. Do not switch accounts or choose a shared room implicitly.
+2. **Keep only the handoff.** Keep it short, usually no more than 150 words: name the project, its stated goal, agreed decisions and constraints, and only the open questions or next step the user asked to carry forward. Mark next-step/status information as temporary and dated, using a known current date or saying the date is unavailable. Keep undecided facts explicitly unknown. Include a source such as “user-approved checkpoint in this chat”; do not claim approval of details the user has not agreed to. Exclude secrets, personal identifiers, unrelated projects and bulk chat/file contents.
+3. **Use the connected plugin's actual schema.** Use this plugin's configured Mnemoverse server instance, not another connected memory account. The raw tool is `memory_write` with `content` and `domain`; a UI label such as “Store Memory” is not an argument name. Check the exposed schema before calling it. If needed tools are absent or authentication fails, say the checkpoint is not saved and offer the text here for the user to carry forward. Use the host's normal connection flow; never ask for an API key in chat or invent a Desktop `/mcp` command.
+4. **Write only the requested snapshot.** The user's explicit save request authorizes the agreed content and scope; do not ask again when both are already clear. A read-only request to continue a project does not authorize a new checkpoint. If an equivalent checkpoint is already visible from a successful scoped read, report it as existing rather than writing a duplicate. Do not automatically read all memory to check.
+5. **Report the actual outcome.** Confirm a new save only after a non-error tool result explicitly reports `stored: true`. `stored: false`, `isError`, an error payload, missing confirmation or a timeout is not success. Quote a returned refusal reason without inventing one; do not infer “already saved” from refusal alone or rephrase/retry to force storage. After a timeout, the outcome may be unknown. Keep a copy of the proposed checkpoint in the answer, clearly labeled unsaved or unconfirmed as appropriate.
+
+After a confirmed save, give the exact project/domain and a fresh-chat prompt: “Continue [project] in domain [exact domain]. Use its checkpoint to [next task]. Keep unknown or conflicting facts explicit.” The user should be able to resume the work without pasting the old conversation. A later chat uses the `memory-catch-up` skill's project-continuation path.
 
 ## Check first
 
