@@ -109,7 +109,7 @@ A superseded entry keeps its text and gains an end date and a pointer to the ent
 - **Recall returns too much.** Keep the entries that match the current project and task; ignore the rest rather than pasting them into context.
 - **Two entries disagree.** Show both with their dates and ask which holds. Do not resolve the conflict silently.
 - **A save is rejected or filtered by the backend.** Report it once. Do not rephrase the same fact repeatedly to get it through.
-- **The user asks to forget something.** Close or remove the entry as the backend allows, and confirm what was removed.
+- **The user asks to forget something.** Use what the backend offers, a delete or a correction that supersedes the entry, and say plainly what changed and what is still stored.
 
 ## Examples
 

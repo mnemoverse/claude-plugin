@@ -71,10 +71,15 @@ The server at `https://mcp.mnemoverse.com/mcp` uses OAuth 2.1 with PKCE. Install
 | `/mnemoverse:recall` | search memory before acting, with provenance, surfacing contradictions instead of hiding them |
 | `/mnemoverse:memory-status` | counts, domains, and the newest memories |
 
-**Two skills:**
+**Seven skills:**
 
 - `agent-memory-discipline` (CC0, backend-neutral): standing rules for when to recall and what is worth saving. It names no vendor and works on any memory backend; it ships here so the connected memory is actually used.
 - `setup`: guides Claude through connecting and troubleshooting the MCP server.
+- `memory-search`: searches memory before answering, then rates which recalled memories helped.
+- `memory-save`: saves a decision, preference, correction or lesson as one self-contained fact, never a secret.
+- `memory-catch-up`: lists what was added since a given time, in personal memory or in a shared room (beta).
+- `memory-onboard`: seeds memory with a project's conventions and decisions from its README, CLAUDE.md and AGENTS.md.
+- `mnemoverse-docs`: for developers adding Mnemoverse memory to their own app or agent; picks the form and points to the docs page.
 
 **The tools come from the remote server itself**: reading and writing memories, a newest-first listing, stats, usefulness feedback, shared rooms (beta), and a vault alias listing (aliases only, values are never returned). The current list, with descriptions and schemas, is at the server's [card](https://mcp.mnemoverse.com/.well-known/mcp/server-card.json).
 
