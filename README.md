@@ -89,6 +89,15 @@ The server at `https://mcp.mnemoverse.com/mcp` uses OAuth 2.1 with PKCE. Install
 2. `Before you touch the billing module, recall what we have decided about it in past sessions.`
 3. `/mnemoverse:memory-status` after a week of use, to see what your sessions have been saving.
 
+## Continue my project in a new chat
+
+Use the existing `memory-save` and `memory-catch-up` skills together:
+
+1. Choose a project and its exact memory domain. Ask: “Save a checkpoint for the Riverside exhibit in domain `project:riverside`: the agreed audience, tone and label-length limit. Carry forward the open question about the opening date and the next task, drafting the entrance label.” Keep the checkpoint nonsecret and confirm that the tool actually stored it.
+2. In a fresh chat, ask: “Continue the Riverside exhibit in domain `project:riverside`. Use its checkpoint to draft the entrance label. Keep unknown or conflicting facts explicit.” Claude retrieves within that project and applies the decisions to the draft.
+
+A checkpoint is a small, dated handoff the user requests, not a copy of the old conversation. Temporary next steps stay labeled as such. If memory is unavailable or no matching checkpoint is found, Claude says so and asks for the missing context. This scenario needs a connected Mnemoverse account; no new command or API key pasted into chat is required.
+
 ## What gets stored, and what does not
 
 The plugin stores only what you or Claude explicitly save through the memory tools: single facts, decisions, corrections. It does not record conversations, does not read your chat history, and the bundled skill explicitly refuses to persist secrets, API keys, passwords, payment data, or personal identifiers.
