@@ -59,7 +59,7 @@ and run `hermes mcp login mnemoverse` (Hermes opens the browser and waits on a l
 
 ## First run: sign in once, no API key
 
-The server at `https://mcp.mnemoverse.com/mcp` uses OAuth 2.1 with PKCE. Installing the plugin does not open anything by itself: run `/mcp`, select the Mnemoverse server (from this plugin it is listed as `plugin:mnemoverse:mnemoverse`) and choose Authenticate, then sign in to your Mnemoverse account in the browser (free tier at [console.mnemoverse.com](https://console.mnemoverse.com?utm_source=github&utm_medium=readme&utm_campaign=claude-plugin), no credit card) and grant the requested scopes, which include `memory:read` and `memory:write`. There is no API key to paste, and access can be revoked at any time from the console. The bundled `setup` skill walks Claude through this if anything goes wrong.
+The server at `https://mcp.mnemoverse.com/mcp` uses OAuth 2.1 with PKCE. Installing the plugin does not open anything by itself: run `/mcp`, select the Mnemoverse server (from this plugin it is listed as `plugin:mnemoverse:mnemoverse`) and choose Authenticate, then sign in to your Mnemoverse account in the browser (free tier at [console.mnemoverse.com](https://console.mnemoverse.com?utm_source=github&utm_medium=readme&utm_campaign=claude-plugin), no credit card) and grant the requested scopes, which include `memory:read` and `memory:write`. There is no API key to paste. To disconnect, remove the server from your client; resetting your password in the console can also disconnect all connected apps at once. The bundled `setup` skill walks Claude through this if anything goes wrong.
 
 ## What you get
 
@@ -71,10 +71,15 @@ The server at `https://mcp.mnemoverse.com/mcp` uses OAuth 2.1 with PKCE. Install
 | `/mnemoverse:recall` | search memory before acting, with provenance, surfacing contradictions instead of hiding them |
 | `/mnemoverse:memory-status` | counts, domains, and the newest memories |
 
-**Two skills:**
+**Seven skills:**
 
 - `agent-memory-discipline` (CC0, backend-neutral): standing rules for when to recall and what is worth saving. It names no vendor and works on any memory backend; it ships here so the connected memory is actually used.
 - `setup`: guides Claude through connecting and troubleshooting the MCP server.
+- `memory-search`: searches memory before answering, then rates which recalled memories helped.
+- `memory-save`: saves a decision, preference, correction or lesson as one self-contained fact, never a secret.
+- `memory-catch-up`: lists what was added since a given time, in personal memory or in a shared room (beta).
+- `memory-onboard`: seeds memory with a project's conventions and decisions from its README, CLAUDE.md and AGENTS.md.
+- `mnemoverse-docs`: for developers adding Mnemoverse memory to their own app or agent; picks the form and points to the docs page.
 
 **The tools come from the remote server itself**: reading and writing memories, a newest-first listing, stats, usefulness feedback, shared rooms (beta), and a vault alias listing (aliases only, values are never returned). The current list, with descriptions and schemas, is at the server's [card](https://mcp.mnemoverse.com/.well-known/mcp/server-card.json).
 
