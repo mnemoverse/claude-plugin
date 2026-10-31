@@ -1,0 +1,27 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "mnemoverse",
+  "displayName": "Mnemoverse Memory",
+  "version": "1.0.3",
+  "description": "Hosted long-term memory shared across sessions and AI tools. Rating a recalled memory as helpful or misleading re-ranks what comes back next.",
+  "logo": "assets/logo-512.png",
+  "suggestedPrompts": [
+    "What did we decide about this project last time?",
+    "Remember that I prefer pnpm and strict TypeScript"
+  ],
+  "author": {
+    "name": "Mnemoverse",
+    "email": "hello@mnemoverse.com",
+    "url": "https://mnemoverse.com"
+  },
+  "homepage": "https://mnemoverse.com/docs/api/remote-mcp-server",
+  "repository": "https://github.com/mnemoverse/claude-plugin",
+  "license": "MIT",
+  "keywords": [
+    "memory",
+    "agent-memory",
+    "persistent-memory",
+    "mcp",
+    "context"
+  ]
+}

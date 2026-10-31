@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Manifest drift guard.
 //
-// Nine MCP-server manifests, across six files in this repo and two more
+// Twelve MCP-server manifests, across nine files in this repo and two more
 // repos, all declare the same hosted server URL. Each host also mandates its
 // own dialect for the fields around that URL (see README.md, "Why .mcp.json
 // says http and mcp.json says streamable-http"). This script asserts both:
@@ -9,9 +9,14 @@
 // appears, and each file's shape still matches the fixture that was last
 // verified against that host's own docs.
 //
+// The Google Antigravity plugin in antigravity/ must be self-contained (the
+// Marketplace bundles only that folder), so it carries a copy of skills/.
+// The script also asserts that the copy is byte-identical to skills/ and that
+// antigravity/plugin.json has the same version as plugin.json.
+//
 // No dependencies. Node 20+ (uses global fetch).
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -48,6 +53,15 @@ const manifests = [
   { file: ".claude-plugin/plugin.json", kind: "local", local: ".claude-plugin/plugin.json",
     fixture: "claude-plugin-manifest.expected.json",
     urlPath: null },
+  { file: "mcp_config.json", kind: "local", local: "mcp_config.json",
+    fixture: "root-mcp-config-json.expected.json",
+    urlPath: ["mcpServers", "mnemoverse", "serverUrl"] },
+  { file: "antigravity/plugin.json", kind: "local", local: "antigravity/plugin.json",
+    fixture: "antigravity-plugin-json.expected.json",
+    urlPath: null },
+  { file: "antigravity/mcp_config.json", kind: "local", local: "antigravity/mcp_config.json",
+    fixture: "antigravity-mcp-config-json.expected.json",
+    urlPath: ["mcpServers", "mnemoverse", "serverUrl"] },
   { file: "cursor-plugin/.cursor-plugin/plugin.json", kind: "remote",
     url: `${RAW_BASE}/mnemoverse/cursor-plugin/main/.cursor-plugin/plugin.json`,
     fixture: "cursor-plugin-json.expected.json",
@@ -166,8 +180,65 @@ async function main() {
     }
   }
 
+  for (const row of antigravityMirrorRows()) {
+    rows.push(row);
+    if (row[2] !== "PASS") hadFailure = true;
+  }
+
   printTable(rows);
   process.exit(hadFailure ? 1 : 0);
+}
+
+// Every file under dir, as sorted paths relative to dir with "/" separators.
+function listFiles(dir) {
+  const out = [];
+  const walk = (rel) => {
+    for (const entry of readdirSync(path.join(dir, rel), { withFileTypes: true })) {
+      const child = rel ? `${rel}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) walk(child);
+      else out.push(child);
+    }
+  };
+  walk("");
+  return out.sort();
+}
+
+// antigravity/skills must stay a byte-identical copy of skills/, and
+// antigravity/plugin.json must carry the same version as plugin.json.
+function antigravityMirrorRows() {
+  const rows = [];
+  const src = path.join(repoRoot, "skills");
+  const dst = path.join(repoRoot, "antigravity", "skills");
+  try {
+    const a = listFiles(src);
+    const b = listFiles(dst);
+    const inB = new Set(b);
+    const inA = new Set(a);
+    const problems = [
+      ...a.filter((f) => !inB.has(f)).map((f) => `missing ${f}`),
+      ...b.filter((f) => !inA.has(f)).map((f) => `extra ${f}`),
+      ...a.filter((f) => inB.has(f) &&
+        !readFileSync(path.join(src, f)).equals(readFileSync(path.join(dst, f))))
+        .map((f) => `differs ${f}`),
+    ];
+    rows.push(["antigravity/skills", "byte-identical copy of skills/",
+      problems.length ? "FAIL" : "PASS",
+      problems.length ? problems.join("; ") : `${a.length} files`]);
+  } catch (err) {
+    rows.push(["antigravity/skills", "byte-identical copy of skills/", "FAIL", err.message]);
+  }
+  try {
+    const rootVersion = JSON.parse(readFileSync(path.join(repoRoot, "plugin.json"), "utf8")).version;
+    const agVersion = JSON.parse(
+      readFileSync(path.join(repoRoot, "antigravity", "plugin.json"), "utf8")
+    ).version;
+    rows.push(["antigravity/plugin.json", "version matches plugin.json",
+      agVersion === rootVersion ? "PASS" : "FAIL",
+      `${JSON.stringify(agVersion)} vs ${JSON.stringify(rootVersion)}`]);
+  } catch (err) {
+    rows.push(["antigravity/plugin.json", "version matches plugin.json", "FAIL", err.message]);
+  }
+  return rows;
 }
 
 function printTable(rows) {

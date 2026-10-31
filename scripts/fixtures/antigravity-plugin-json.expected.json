@@ -1,0 +1,37 @@
+{
+  "file": "antigravity/plugin.json",
+  "host": "Google Antigravity plugin (Marketplace)",
+  "verifiedAgainst": "https://antigravity.google/schemas/v1/plugin.json, https://antigravity.google/docs/build-plugins and agy plugin validate --strict, agy 1.4.12",
+  "verifiedOn": "2026-10-31",
+  "checks": [
+    {
+      "name": "$schema is the Antigravity v1 plugin schema",
+      "kind": "equals",
+      "path": ["$schema"],
+      "expect": "https://antigravity.google/schemas/v1/plugin.json"
+    },
+    {
+      "name": "name is mnemoverse",
+      "kind": "equals",
+      "path": ["name"],
+      "expect": "mnemoverse"
+    },
+    {
+      "name": "fields the Marketplace requires are present",
+      "kind": "requiredPresent",
+      "path": [],
+      "required": ["name", "displayName", "description", "version", "logo", "suggestedPrompts", "author"]
+    },
+    {
+      "name": "keys subset of the schema keys this file uses",
+      "kind": "keysSubset",
+      "path": [],
+      "allowed": ["$schema", "name", "displayName", "description", "version", "logo", "suggestedPrompts", "author", "homepage", "repository", "license", "keywords"]
+    },
+    {
+      "name": "no mcpServers key (servers live in mcp_config.json)",
+      "kind": "absent",
+      "path": ["mcpServers"]
+    }
+  ]
+}
