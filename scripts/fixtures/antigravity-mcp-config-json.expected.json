@@ -1,0 +1,24 @@
+{
+  "file": "antigravity/mcp_config.json",
+  "host": "Google Antigravity plugin",
+  "verifiedAgainst": "https://antigravity.google/docs/build-plugins (MCP servers) and agy plugin validate --strict, agy 1.4.12",
+  "verifiedOn": "2026-10-31",
+  "checks": [
+    {
+      "name": "serverUrl present",
+      "kind": "present",
+      "path": ["mcpServers", "mnemoverse", "serverUrl"]
+    },
+    {
+      "name": "no httpUrl (Antigravity does not read it)",
+      "kind": "absent",
+      "path": ["mcpServers", "mnemoverse", "httpUrl"]
+    },
+    {
+      "name": "entry keys subset of {serverUrl,headers,oauth}",
+      "kind": "keysSubset",
+      "path": ["mcpServers", "mnemoverse"],
+      "allowed": ["serverUrl", "headers", "oauth"]
+    }
+  ]
+}
