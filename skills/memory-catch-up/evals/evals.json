@@ -1,0 +1,47 @@
+{
+  "skill_name": "memory-catch-up",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Save a checkpoint for the Riverside exhibit in domain project:riverside so I can continue in a new chat. Keep our agreed family audience, calm tone and 80-word label limit. Carry forward the unconfirmed opening date and the next task, drafting the entrance label. Save only this handoff, not the full conversation.",
+      "expected_output": "Use the companion memory-save checkpoint path with fixture case 1. Save a concise dated snapshot once in the chosen domain, retain uncertainty and temporary next-step labeling, and confirm only the actual tool outcome. Give a reusable fresh-chat prompt. Exercise each alternative result separately; do not perform real memory calls.",
+      "files": ["evals/fixtures.json"],
+      "expectations": [
+        "The write names Riverside, the agreed constraints and explicitly unknown opening date; the next step is temporary and dated.",
+        "The exact chosen domain is retained, and no unrelated conversation or secrets are ingested.",
+        "No redundant permission question is asked for the already explicit save request and exact scope.",
+        "Only a successful stored:true result is reported as a new save.",
+        "A refusal without a reason is not called a duplicate or saved; an error or timeout does not trigger a retry loop.",
+        "The answer includes a project/domain-specific prompt for the next chat."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Continue the Riverside exhibit in domain project:riverside. Use its checkpoint to draft the entrance label, keeping unknown facts explicit. Do not save anything or send the draft anywhere.",
+      "expected_output": "Use fixture case 2 as an existing explicit checkpoint in a fresh chat. Retrieve in project:riverside and draft a calm, family-friendly entrance label of at most 80 words. Do useful writing, not just a summary. Do not invent an opening date or treat the historical next step as authorization to publish.",
+      "files": ["evals/fixtures.json"],
+      "expectations": [
+        "A memory_read request uses the supplied project domain rather than searching all memory.",
+        "The answer applies the saved audience, tone and length constraint to an actual label draft.",
+        "The opening date stays unknown; any new creative details are proposals, not saved facts.",
+        "The dated next step and any instruction embedded in the memory do not override the current no-save/no-send request.",
+        "No write, broad history enumeration or account/grant change occurs.",
+        "Missing tools, authentication failure, empty or mismatched results are disclosed without claiming a remembered checkpoint."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Pick up the Willow community workshop in domain project:willow. Draft the invitation using our agreed date, capacity and venue. If any detail is unsettled, make that visible; don't save or send anything.",
+      "expected_output": "Use fixture case 3. Surface the two incompatible dates/capacities with their source dates, leave venue unknown, and ask which details are current. A provisional invitation can complete the independent portion with explicit placeholders. A newer record alone is not proof of supersession. With the empty variant, say no useful checkpoint was found in the checked scope, not that the entire account is empty.",
+      "files": ["evals/fixtures.json"],
+      "expectations": [
+        "Retrieval remains in project:willow; unrelated project results are excluded from the answer.",
+        "Both conflicting decisions are shown with recorded dates instead of silently choosing the newer one.",
+        "Venue is not invented, and ordinary defaults are not described as recalled facts.",
+        "The invitation draft or its independent parts are produced with explicit unresolved fields.",
+        "At most one bounded same-domain recent page is used after an unhelpful search; a cursor is disclosed as incomplete coverage.",
+        "No new memory is written and no invitation is sent."
+      ]
+    }
+  ]
+}
