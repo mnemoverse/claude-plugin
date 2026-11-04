@@ -86,7 +86,7 @@ After sign-in, ask the agent to check the connection with `memory_stats`. A succ
 **Seven skills:**
 
 - `agent-memory-discipline` (CC0, backend-neutral): standing rules for when to recall and what is worth saving. It names no vendor and works on any memory backend; it ships here so the connected memory is actually used.
-- `setup`: guides Claude through connecting and troubleshooting the MCP server.
+- `setup`: guides the current host through connecting and troubleshooting the MCP server.
 - `memory-search`: searches memory before answering, then rates which recalled memories helped.
 - `memory-save`: saves a decision, preference, correction or lesson as one self-contained fact, never a secret.
 - `memory-catch-up`: lists what was added since a given time, in personal memory or in a shared room (beta).
@@ -103,7 +103,7 @@ After sign-in, ask the agent to check the connection with `memory_stats`. A succ
 
 ## What gets stored, and what does not
 
-The plugin stores only what you or Claude explicitly save through the memory tools: single facts, decisions, corrections. It does not record conversations, does not read your chat history, and the bundled skill refuses to persist passwords, API keys, tokens, payment data, MFA codes, government IDs or health records.
+The plugin stores only what you or the connected agent explicitly save through the memory tools: single facts, decisions, corrections. It does not record conversations, does not read your chat history, and the bundled skill refuses to persist passwords, API keys, tokens, payment data, MFA codes, government IDs or health records.
 
 Memory content lives in your Mnemoverse account. Privacy policy: [mnemoverse.com/docs/legal/privacy-policy](https://mnemoverse.com/docs/legal/privacy-policy).
 
