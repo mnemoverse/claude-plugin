@@ -2,7 +2,7 @@
   "$schema": "https://antigravity.google/schemas/v1/plugin.json",
   "name": "mnemoverse",
   "displayName": "Mnemoverse Memory",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Hosted long-term memory shared across sessions and AI tools. Rating a recalled memory as helpful or misleading re-ranks what comes back next.",
   "logo": "assets/logo-512.png",
   "suggestedPrompts": [
