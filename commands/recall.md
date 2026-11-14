@@ -5,6 +5,8 @@ argument-hint: <what to look for>
 
 Search long-term Mnemoverse memory for: $ARGUMENTS
 
+The search sends the query to the user's Mnemoverse account on the hosted service at mnemoverse.com and returns memories stored there, not files on this machine.
+
 Rules for the recall:
 
 1. Search with the user's actual words plus the project or repository name. If the first search returns nothing useful, try one broader query, then stop and say what you tried rather than looping.
