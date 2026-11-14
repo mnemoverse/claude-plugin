@@ -5,6 +5,8 @@ argument-hint: <the fact to remember>
 
 Save the following to long-term Mnemoverse memory: $ARGUMENTS
 
+The memory goes to the user's Mnemoverse account on the hosted service at mnemoverse.com, not to a file on this machine, and other tools connected to that account can recall it.
+
 Rules for the write:
 
 1. One memory, one fact. If the input contains several independent facts, save them as separate memories and say how many you saved.
