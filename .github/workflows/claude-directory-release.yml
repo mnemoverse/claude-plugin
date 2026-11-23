@@ -1,0 +1,101 @@
+name: Claude directory release
+
+# Publishes the lean build of this plugin for the Claude plugin directory,
+# which accepts only plugin files, to the branch claude-directory. That
+# branch holds the generated tree at its root and nothing else; each release
+# adds one commit whose parent is the previous release, pushed as a plain
+# fast-forward (never forced). The tree itself is never committed to main.
+#
+# Runs on a v* tag push, and by hand (workflow_dispatch) from any branch,
+# tag or commit. On pull requests it runs the same steps as a dry run: it
+# builds the commit and prints it, without pushing and without write access.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag or commit to build from. Empty: the branch this run is started on."
+        required: false
+        default: ""
+        type: string
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    paths:
+      - ".claude-plugin/**"
+      - "skills/**"
+      - "commands/**"
+      - "LICENSE"
+      - "scripts/manifest-expected.json"
+      - "scripts/claude-directory/**"
+      - ".github/workflows/claude-directory-release.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: claude-directory-release
+      cancel-in-progress: false
+    env:
+      SOURCE_REF: ${{ inputs.ref || github.ref_name }}
+      GIT_AUTHOR_NAME: github-actions[bot]
+      GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+      GIT_COMMITTER_NAME: github-actions[bot]
+      GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          # This job pushes the release commit with the job token.
+          persist-credentials: true
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+      - name: Build and check the Claude directory tree
+        run: node scripts/claude-directory/check.mjs --out "$RUNNER_TEMP/claude-directory"
+      - name: Commit the tree to claude-directory and push it as a fast-forward
+        run: |
+          set -euo pipefail
+          tag_arg=()
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then tag_arg=(--tag "$GITHUB_REF_NAME"); fi
+          node scripts/claude-directory/publish.mjs \
+            --tree "$RUNNER_TEMP/claude-directory" \
+            --ref "$SOURCE_REF" \
+            --sha "$(git rev-parse HEAD)" \
+            "${tag_arg[@]}"
+
+  dry-run:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: claude-directory-dry-run-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    env:
+      SOURCE_REF: ${{ github.head_ref }}
+      GIT_AUTHOR_NAME: github-actions[bot]
+      GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+      GIT_COMMITTER_NAME: github-actions[bot]
+      GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+      - name: Build and check the Claude directory tree
+        run: node scripts/claude-directory/check.mjs --out "$RUNNER_TEMP/claude-directory"
+      - name: Build the release commit without pushing
+        run: |
+          node scripts/claude-directory/publish.mjs --dry-run \
+            --tree "$RUNNER_TEMP/claude-directory" \
+            --ref "$SOURCE_REF" \
+            --sha "$(git rev-parse HEAD)"
