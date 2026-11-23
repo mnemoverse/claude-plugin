@@ -24,6 +24,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { checkTree, context } from "./check.mjs";
 import { repoRoot } from "./build.mjs";
+import { compareVersions } from "./version.mjs";
 
 function args(argv) {
   const out = { remote: "origin", branch: "claude-directory", dryRun: argv.includes("--dry-run") };
@@ -35,18 +36,6 @@ function args(argv) {
     if (!out[key]) throw new Error(`--${key} is required`);
   }
   return out;
-}
-
-function compareVersions(a, b) {
-  const pa = a.split(/[.-]/).map((x) => (/^\d+$/.test(x) ? Number(x) : x));
-  const pb = b.split(/[.-]/).map((x) => (/^\d+$/.test(x) ? Number(x) : x));
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    if (pa[i] === pb[i]) continue;
-    if (pa[i] === undefined) return -1;
-    if (pb[i] === undefined) return 1;
-    return pa[i] < pb[i] ? -1 : 1;
-  }
-  return 0;
 }
 
 function listFiles(dir) {

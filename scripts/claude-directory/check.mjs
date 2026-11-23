@@ -21,6 +21,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build, expectedServerUrl, loadConfig, repoRoot, rootVersion } from "./build.mjs";
+import { compareVersions, VERSION_ORDER_CASES } from "./version.mjs";
 
 export const MAX_FILE_BYTES = 256 * 1024;
 export const MAX_FILES = 512;
@@ -110,8 +111,14 @@ function wordsOutsideCode(markdown) {
   return count;
 }
 
+// Structural equality that ignores the order of object keys.
 function deepEqual(a, b) {
-  return JSON.stringify(a) === JSON.stringify(b);
+  if (a === b) return true;
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  return ka.length === kb.length && ka.every((k) => Object.hasOwn(b, k) && deepEqual(a[k], b[k]));
 }
 
 // Returns a list of {rule, detail} failures; an empty list means the tree passes.
@@ -123,7 +130,9 @@ export function checkTree(dir, ctx) {
   const read = (rel) => readFileSync(path.join(dir, rel), "utf8");
   const has = (rel) => files.some((f) => f.rel === rel);
 
-  for (const rel of ALLOWED_EXACT) if (!has(rel)) bad("required-files", `${rel} is missing`);
+  const required = new Set([...ALLOWED_EXACT, ctx.config.manifest.to, ctx.config.readme.to,
+    ...ctx.config.files.map((f) => f.to)]);
+  for (const rel of [...required].sort()) if (!has(rel)) bad("required-files", `${rel} is missing`);
 
   for (const e of entries) {
     if (e.kind === "symlink") bad("regular-files", `${e.rel} is a symbolic link`);
@@ -244,7 +253,7 @@ async function main(argv) {
     }
 
     if (!argv.includes("--no-fixtures")) {
-      const { treeFixtures, buildFixtures } = await import("./fixtures.mjs");
+      const { treeFixtures, buildFixtures, passingVariants } = await import("./fixtures.mjs");
       console.log("\nNegative fixtures (each must be rejected):");
       const covered = new Set();
       for (const fx of treeFixtures(ctx)) {
@@ -256,6 +265,15 @@ async function main(argv) {
         if (hit) covered.add(fx.rule);
         else ok = false;
         console.log(`${hit ? "PASS" : "FAIL"}  [${fx.rule}] ${fx.name}${hit ? "" : ` (not rejected by ${fx.rule}; got ${got.map((f) => f.rule).join(", ") || "no failures"})`}`);
+        rmSync(copy, { recursive: true, force: true });
+      }
+      for (const fx of passingVariants()) {
+        const copy = mkdtempSync(path.join(scratch, "ok-"));
+        cpSync(dir, copy, { recursive: true, verbatimSymlinks: true });
+        fx.mutate(copy);
+        const got = checkTree(copy, ctx);
+        if (got.length) ok = false;
+        console.log(`${got.length ? "FAIL" : "PASS"}  [accepted] ${fx.name}${got.length ? ` (rejected: ${got.map((f) => f.detail).join("; ")})` : ""}`);
         rmSync(copy, { recursive: true, force: true });
       }
       for (const rule of RULES) {
@@ -279,6 +297,11 @@ async function main(argv) {
         const hit = error !== null && fx.expect.test(error.message);
         if (!hit) ok = false;
         console.log(`${hit ? "PASS" : "FAIL"}  [build] ${fx.name}${hit ? "" : ` (build ${error ? `failed with: ${error.message}` : "succeeded"})`}`);
+      }
+      for (const [a, b, want] of VERSION_ORDER_CASES) {
+        const got = compareVersions(a, b);
+        if (got !== want) ok = false;
+        console.log(`${got === want ? "PASS" : "FAIL"}  [version-order] ${a} vs ${b} is ${want}${got === want ? "" : `, got ${got}`}`);
       }
     }
   } finally {

@@ -32,6 +32,13 @@ export function treeFixtures(ctx) {
   const fixtures = [
     { rule: "required-files", name: "LICENSE removed", mutate: (d) => unlinkSync(path.join(d, "LICENSE")) },
     { rule: "required-files", name: "README.md removed", mutate: (d) => unlinkSync(path.join(d, "README.md")) },
+    { rule: "required-files", name: "a configured skill and command removed",
+      mutate: (d) => {
+        rmSync(path.join(d, "skills/memory-search"), { recursive: true });
+        unlinkSync(path.join(d, "commands/recall.md"));
+      } },
+    { rule: "manifest-mcp", name: "a server under another name",
+      mutate: (d) => editManifest(d, (m) => { m.mcpServers = { memory: m.mcpServers.mnemoverse }; }) },
     { rule: "regular-files", name: "a reference that is a symbolic link",
       mutate: (d) => {
         mkdirSync(path.join(d, "skills/memory-save/references"), { recursive: true });
@@ -92,6 +99,17 @@ export function treeFixtures(ctx) {
       mutate: (d) => edit(d, file, (t) => t.split(text).join("")) });
   }
   return fixtures;
+}
+
+// Changes that must still pass: equivalent content written differently.
+export function passingVariants() {
+  return [
+    { name: "server fields in another key order (url before type)",
+      mutate: (d) => editManifest(d, (m) => {
+        const { type, url } = m.mcpServers.mnemoverse;
+        m.mcpServers.mnemoverse = { url, type };
+      }) },
+  ];
 }
 
 const SETUP = "skills/setup/SKILL.md";
