@@ -1,0 +1,79 @@
+{
+  "_comment": "Inputs of the Claude plugin directory build (build.mjs). The directory accepts only plugin files, so this lists every file the lean tree contains and how each one is made from the root sources. The root files are never edited by the build.",
+  "manifest": {
+    "from": ".claude-plugin/plugin.json",
+    "to": ".claude-plugin/plugin.json",
+    "name": "mnemoverse",
+    "copyKeys": ["displayName", "description", "author", "homepage", "repository", "license", "keywords"],
+    "privacyPolicyUrl": "https://mnemoverse.com/docs/legal/privacy-policy",
+    "serverName": "mnemoverse",
+    "serverType": "http",
+    "serverUrlFrom": "scripts/manifest-expected.json"
+  },
+  "readme": {
+    "template": "scripts/claude-directory/README.template.md",
+    "to": "README.md",
+    "minWords": 40,
+    "mustContain": [
+      "https://mcp.mnemoverse.com/mcp",
+      "OAuth",
+      "## What is sent, and when",
+      "`README.md`, `CLAUDE.md`, `AGENTS.md`",
+      "saves a summary",
+      "https://mnemoverse.com/docs/legal/privacy-policy"
+    ]
+  },
+  "files": [
+    { "from": "LICENSE", "to": "LICENSE" },
+    { "from": "skills/agent-memory-discipline/SKILL.md", "to": "skills/agent-memory-discipline/SKILL.md", "stripFrontmatterKeys": ["allowed-tools"] },
+    { "from": "skills/agent-memory-discipline/references/entry-format.md", "to": "skills/agent-memory-discipline/references/entry-format.md" },
+    { "from": "skills/memory-catch-up/SKILL.md", "to": "skills/memory-catch-up/SKILL.md", "stripFrontmatterKeys": ["allowed-tools"] },
+    { "from": "skills/memory-onboard/SKILL.md", "to": "skills/memory-onboard/SKILL.md", "stripFrontmatterKeys": ["allowed-tools"] },
+    { "from": "skills/memory-save/SKILL.md", "to": "skills/memory-save/SKILL.md", "stripFrontmatterKeys": ["allowed-tools"] },
+    { "from": "skills/memory-search/SKILL.md", "to": "skills/memory-search/SKILL.md", "stripFrontmatterKeys": ["allowed-tools"] },
+    {
+      "from": "skills/setup/SKILL.md",
+      "to": "skills/setup/SKILL.md",
+      "stripFrontmatterKeys": ["allowed-tools"],
+      "edits": [
+        { "op": "drop-section", "heading": "### Hermes Agent" },
+        { "op": "drop-section", "heading": "### Antigravity" },
+        { "op": "drop-paragraph", "contains": "claude mcp add" },
+        {
+          "op": "replace",
+          "find": " A host-native entry may intentionally replace the plugin entry, as on Hermes Agent.",
+          "with": ""
+        },
+        {
+          "op": "replace",
+          "find": "In Claude Code, choose Authenticate or Re-authenticate as offered; in Hermes, use `hermes mcp login mnemoverse`.",
+          "with": "In Claude Code, choose Authenticate or Re-authenticate as offered."
+        },
+        {
+          "op": "replace",
+          "find": "Follow the current host's [installation guide](https://mnemoverse.com/docs/api/install-by-host); for OpenClaw, use its [OpenClaw section](https://mnemoverse.com/docs/api/install-by-host#openclaw). Do not substitute Claude Code commands for another host's sign-in flow.",
+          "with": "In Claude Desktop, claude.ai and the Claude mobile apps, follow the [Claude apps guide](https://mnemoverse.com/docs/api/claude-apps) for that app's own sign-in. Do not substitute Claude Code commands for another host's sign-in flow."
+        }
+      ],
+      "requiredHeadings": [
+        "# Connecting Mnemoverse memory",
+        "## Check first",
+        "## If tools or sign-in are missing",
+        "### Claude Code",
+        "### Other hosts",
+        "## If verification fails",
+        "## What the connection exposes",
+        "## Privacy"
+      ],
+      "mustNotContain": ["Hermes", "hermes", "Antigravity", "claude mcp add", "~/"]
+    },
+    { "from": "commands/memory-status.md", "to": "commands/memory-status.md", "stripFrontmatterKeys": ["allowed-tools"] },
+    { "from": "commands/recall.md", "to": "commands/recall.md", "stripFrontmatterKeys": ["allowed-tools"] },
+    { "from": "commands/remember.md", "to": "commands/remember.md", "stripFrontmatterKeys": ["allowed-tools"] }
+  ],
+  "refusalSentences": [
+    { "file": "skills/memory-save/SKILL.md", "text": "Never store passwords, API keys, tokens, payment data, MFA codes, government IDs or health records." },
+    { "file": "skills/setup/SKILL.md", "text": "Never store passwords, API keys, tokens, payment data, MFA codes, government IDs or health records." },
+    { "file": "commands/remember.md", "text": "Never store secrets, API keys, passwords, payment data, or personal identifiers." }
+  ]
+}
