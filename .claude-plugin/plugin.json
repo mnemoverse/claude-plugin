@@ -10,6 +10,7 @@
   },
   "homepage": "https://mnemoverse.com/docs/api/remote-mcp-server",
   "repository": "https://github.com/mnemoverse/claude-plugin",
+  "privacyPolicyUrl": "https://mnemoverse.com/docs/legal/privacy-policy",
   "license": "MIT",
   "keywords": [
     "memory",
