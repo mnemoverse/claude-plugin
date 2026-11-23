@@ -12,16 +12,19 @@
 // that declares exactly the hosted server, no text that reads or passes a
 // credential, and a README that says what the plugin sends and where. Every
 // rule has a negative fixture in fixtures.mjs that must fail it, so a rule
-// that stops biting fails this check too.
+// that stops biting fails this check too, and fixtures.mjs pins the rule
+// data (rule ids, forbidden text, README phrases, refusal sentences, the
+// setup skill's headings) as literals, so a deleted rule fails it as well.
+//
+// Text files are read as LF without a byte order mark, as build.mjs writes
+// them, so CRLF line endings or a BOM cannot hide front matter.
 //
 // No dependencies. Node 20+.
 
 import { cpSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import { build, expectedServerUrl, loadConfig, repoRoot, rootVersion } from "./build.mjs";
-import { compareVersions, VERSION_ORDER_CASES } from "./version.mjs";
+import { build, expectedServerUrl, frontmatterBlock, isMain, loadConfig, normalizeText, repoRoot, rootVersion } from "./build.mjs";
 
 export const MAX_FILE_BYTES = 256 * 1024;
 export const MAX_FILES = 512;
@@ -70,10 +73,16 @@ export const FORBIDDEN_TEXT = [
 
 export const RULES = [
   "required-files", "regular-files", "allowlist", "dotfile", "file-type", "file-size",
-  "file-count", "allowed-tools", "manifest-parse", "manifest-name", "manifest-version",
+  "file-count", "frontmatter", "allowed-tools", "manifest-parse", "manifest-name", "manifest-version",
   "manifest-privacy", "manifest-mcp", "manifest-keys", "forbidden-text", "readme-words",
-  "readme-disclosure", "refusal-kept",
+  "readme-disclosure", "readme-template", "refusal-kept",
 ];
+
+// Files that a host reads front matter from: each must start with one.
+const NEEDS_FRONTMATTER = [new RegExp(`^skills/${SEGMENT}/SKILL\\.md$`), new RegExp(`^commands/${SEGMENT}\\.md$`)];
+// allowed-tools as a key anywhere in a front matter block, bare or quoted,
+// at any indentation.
+const ALLOWED_TOOLS_KEY = /^\s*["']?allowed-tools["']?\s*:(.*)$/im;
 
 function walk(dir) {
   const out = [];
@@ -89,12 +98,6 @@ function walk(dir) {
   };
   visit("");
   return out;
-}
-
-function frontmatter(text) {
-  if (!text.startsWith("---\n")) return null;
-  const close = text.indexOf("\n---\n", 4);
-  return close < 0 ? null : text.slice(4, close);
 }
 
 function wordsOutsideCode(markdown) {
@@ -152,14 +155,19 @@ export function checkTree(dir, ctx) {
 
   const text = new Map();
   for (const f of files) {
-    if (f.size <= MAX_FILE_BYTES) text.set(f.rel, read(f.rel));
+    if (f.size <= MAX_FILE_BYTES) text.set(f.rel, normalizeText(read(f.rel)));
   }
 
   for (const [rel, body] of text) {
     if (!rel.endsWith(".md")) continue;
-    const fm = frontmatter(body);
+    const fm = frontmatterBlock(body);
+    if (NEEDS_FRONTMATTER.some((re) => re.test(rel))) {
+      if (fm === null) bad("frontmatter", `${rel} does not start with a front matter block`);
+      else if (fm.body === null) bad("frontmatter", `${rel} has a front matter block that is never closed`);
+    }
     if (fm === null) continue;
-    const m = /^allowed-tools\s*:(.*)$/m.exec(fm);
+    // An unclosed block is searched to the end of the file.
+    const m = ALLOWED_TOOLS_KEY.exec(fm.body === null ? body : fm.body);
     if (m) {
       bad("allowed-tools", `${rel} sets allowed-tools (${m[1].trim() || "a list"}); the directory build ships none, and the directory accepts at most ${PERMITTED_ALLOWED_TOOLS.join(", ")}`);
     }
@@ -208,6 +216,8 @@ export function checkTree(dir, ctx) {
     for (const phrase of ctx.config.readme.mustContain) {
       if (!readme.includes(phrase)) bad("readme-disclosure", `README.md does not contain "${phrase}"`);
     }
+    const left = /\{\{|\}\}/.exec(readme);
+    if (left) bad("readme-template", `README.md contains "${left[0]}", a template placeholder that was not filled`);
   }
 
   for (const { file, text: sentence } of ctx.config.refusalSentences) {
@@ -220,6 +230,15 @@ export function checkTree(dir, ctx) {
 export function context(root = repoRoot) {
   const config = loadConfig(root);
   return { config, version: rootVersion(root), serverUrl: expectedServerUrl(config, root) };
+}
+
+// A copy of the sources build.mjs reads, for the build fixtures.
+function sourceCopy(scratch) {
+  const root = mkdtempSync(path.join(scratch, "src-"));
+  for (const rel of [".claude-plugin", "skills", "commands", "LICENSE", "scripts/manifest-expected.json", "scripts/claude-directory"]) {
+    cpSync(path.join(repoRoot, rel), path.join(root, rel), { recursive: true });
+  }
+  return root;
 }
 
 function treeListing(dir) {
@@ -253,7 +272,7 @@ async function main(argv) {
     }
 
     if (!argv.includes("--no-fixtures")) {
-      const { treeFixtures, buildFixtures, passingVariants } = await import("./fixtures.mjs");
+      const { treeFixtures, buildFixtures, buildPassingVariants, passingVariants, PINNED } = await import("./fixtures.mjs");
       console.log("\nNegative fixtures (each must be rejected):");
       const covered = new Set();
       for (const fx of treeFixtures(ctx)) {
@@ -283,10 +302,7 @@ async function main(argv) {
         }
       }
       for (const fx of buildFixtures()) {
-        const root = mkdtempSync(path.join(scratch, "src-"));
-        for (const rel of [".claude-plugin", "skills", "commands", "LICENSE", "scripts/manifest-expected.json", "scripts/claude-directory"]) {
-          cpSync(path.join(repoRoot, rel), path.join(root, rel), { recursive: true });
-        }
+        const root = sourceCopy(scratch);
         fx.mutate(root);
         let error = null;
         try {
@@ -298,10 +314,37 @@ async function main(argv) {
         if (!hit) ok = false;
         console.log(`${hit ? "PASS" : "FAIL"}  [build] ${fx.name}${hit ? "" : ` (build ${error ? `failed with: ${error.message}` : "succeeded"})`}`);
       }
-      for (const [a, b, want] of VERSION_ORDER_CASES) {
-        const got = compareVersions(a, b);
-        if (got !== want) ok = false;
-        console.log(`${got === want ? "PASS" : "FAIL"}  [version-order] ${a} vs ${b} is ${want}${got === want ? "" : `, got ${got}`}`);
+      for (const fx of buildPassingVariants()) {
+        const root = sourceCopy(scratch);
+        fx.mutate(root);
+        let got;
+        try {
+          const out = path.join(root, "out");
+          build(out, { root });
+          got = checkTree(out, context(root)).map((f) => `[${f.rule}] ${f.detail}`);
+          got.push(...(fx.verify ? fx.verify(out) : []));
+        } catch (err) {
+          got = [`build failed with: ${err.message}`];
+        }
+        if (got.length) ok = false;
+        console.log(`${got.length ? "FAIL" : "PASS"}  [build-accepted] ${fx.name}${got.length ? ` (${got.join("; ")})` : ""}`);
+      }
+      // The rule data must equal the literals pinned in fixtures.mjs, so a
+      // rule deleted from check.mjs or config.json cannot also delete the
+      // fixtures that would have caught it.
+      const setup = ctx.config.files.find((f) => f.to === "skills/setup/SKILL.md") || {};
+      const live = {
+        rules: RULES,
+        forbiddenTextIds: FORBIDDEN_TEXT.map((p) => p.id),
+        readmePhrases: ctx.config.readme.mustContain,
+        refusalSentences: ctx.config.refusalSentences.map(({ file, text: t }) => ({ file, text: t })),
+        setupHeadings: setup.expectedHeadings,
+        setupSectionMustContain: setup.sectionMustContain,
+      };
+      for (const [key, want] of Object.entries(PINNED)) {
+        const same = JSON.stringify(live[key]) === JSON.stringify(want);
+        if (!same) ok = false;
+        console.log(`${same ? "PASS" : "FAIL"}  [pinned] ${key} matches fixtures.mjs${same ? "" : `: live ${JSON.stringify(live[key])}, pinned ${JSON.stringify(want)}`}`);
       }
     }
   } finally {
@@ -311,7 +354,7 @@ async function main(argv) {
   process.exit(ok ? 0 : 1);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).catch((err) => {
     console.error(err);
     process.exit(1);

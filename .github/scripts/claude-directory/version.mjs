@@ -36,7 +36,7 @@ export function compareVersions(a, b) {
   return 0;
 }
 
-// Ordered cases that check.mjs runs, so a regression in the ordering fails CI.
+// Ordered cases that test.mjs runs, so a regression in the ordering fails CI.
 export const VERSION_ORDER_CASES = [
   ["1.0.5", "1.0.6", -1],
   ["1.0.9", "1.0.10", -1],

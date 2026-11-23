@@ -12,7 +12,7 @@ Version {{version}}. Source: [github.com/mnemoverse/claude-plugin](https://githu
 
 ## Sign-in
 
-The server uses OAuth 2.1 with PKCE. The sign-in happens in your browser, started by the Claude app you use; the plugin itself holds no credential and reads none from your machine. In Claude Code, run `/mcp`, select `plugin:mnemoverse:mnemoverse`, choose Authenticate, sign in to your Mnemoverse account and approve the requested scopes, which include `memory:read` and `memory:write`. Accounts have a free tier at [console.mnemoverse.com](https://console.mnemoverse.com). In Claude Desktop, claude.ai and the mobile apps, see the [Claude apps guide](https://mnemoverse.com/docs/api/claude-apps).
+The server uses OAuth 2.1 with PKCE. The sign-in happens in your browser, started by the Claude app you use; the plugin itself holds no credential and reads none from your machine. In Claude Code, run `/mcp`, select `plugin:mnemoverse:mnemoverse`, choose Authenticate, sign in to your Mnemoverse account and approve the requested scopes, which include `memory:read` and `memory:write`. Accounts have a free tier at [console.mnemoverse.com](https://console.mnemoverse.com). In chat on claude.ai, in the Claude desktop and mobile apps, and in Cowork, the server this plugin declares is listed on the plugin's **Connectors** tab in **Customize > Plugins** (claude.ai or the desktop app); connect it there and sign in ([plugin support by surface](https://claude.com/docs/plugins/platform-support)). For other ways to connect those apps, see the [Claude apps guide](https://mnemoverse.com/docs/api/claude-apps).
 
 ## What is sent, and when
 

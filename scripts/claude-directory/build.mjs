@@ -17,9 +17,9 @@
 //
 // No dependencies. Node 20+.
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const repoRoot = path.resolve(here, "..", "..");
@@ -36,11 +36,40 @@ export function expectedServerUrl(config, root = repoRoot) {
   return JSON.parse(readFileSync(path.join(root, config.manifest.serverUrlFrom), "utf8")).serverUrl;
 }
 
+export const CONFIG_PATH = "scripts/claude-directory/config.json";
+
 class BuildError extends Error {}
 
+// Every build error names config.json, where the rule that failed is set.
 function fail(file, message) {
-  throw new BuildError(`${file}: ${message}`);
+  throw new BuildError(`${file}: ${message} (rule set in ${CONFIG_PATH})`);
 }
+
+// Line endings and a byte order mark do not change what a host reads, so
+// every text source is read as LF without a BOM. check.mjs reads the tree
+// the same way, so a CRLF or BOM file cannot hide its front matter from it.
+export function normalizeText(text) {
+  return text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
+}
+
+// The front matter block at the very start of a Markdown file: the text
+// between an opening "---" line and the next "---" line. Returns null when
+// the file does not start with "---", and { body: null } when it is never
+// closed.
+const FM_OPEN = /^---[ \t]*\n/;
+const FM_CLOSE = /\n---[ \t]*(?:\n|$)/;
+export function frontmatterBlock(text) {
+  const open = FM_OPEN.exec(text);
+  if (!open) return null;
+  const rest = text.slice(open[0].length);
+  const close = FM_CLOSE.exec(`\n${rest}`);
+  if (!close) return { body: null, start: open[0].length, end: text.length };
+  const bodyEnd = Math.max(0, close.index - 1);
+  return { body: rest.slice(0, bodyEnd), start: open[0].length, end: open[0].length + bodyEnd };
+}
+
+// A top-level YAML key, bare or quoted.
+const FM_KEY = /^\s*["']?([A-Za-z0-9_-]+)["']?\s*:/;
 
 // --- Markdown helpers. Lines inside fenced code blocks are never treated as
 // headings or paragraph boundaries.
@@ -92,7 +121,7 @@ function dropSection(text, heading, file) {
   return lines.join("\n");
 }
 
-function dropParagraph(text, needle, file) {
+function dropParagraph(text, paragraph, file) {
   const lines = text.split("\n");
   const mask = fenceMask(lines);
   const paragraphs = [];
@@ -105,8 +134,10 @@ function dropParagraph(text, needle, file) {
       start = null;
     }
   }
-  const hits = paragraphs.filter(([s, e]) => lines.slice(s, e).join("\n").includes(needle));
-  if (hits.length !== 1) fail(file, `drop-paragraph: expected exactly one paragraph containing "${needle}", found ${hits.length}`);
+  // The whole paragraph must match, so a reworded paragraph stops the build
+  // instead of being dropped with text nobody reviewed.
+  const hits = paragraphs.filter(([s, e]) => lines.slice(s, e).join("\n") === paragraph);
+  if (hits.length !== 1) fail(file, `drop-paragraph: expected exactly one paragraph equal to "${paragraph}", found ${hits.length}`);
   const [s, e] = hits[0];
   // Remove the paragraph and the blank line that follows it.
   const removeEnd = e < lines.length && lines[e].trim() === "" ? e + 1 : e;
@@ -120,22 +151,49 @@ function replaceOnce(text, find, replacement, file) {
   return text.replace(find, () => replacement);
 }
 
-// Removes top-level keys from YAML front matter, including any indented or
-// list continuation lines of a multi-line value.
+// Removes top-level keys (bare or quoted) from YAML front matter, including
+// any indented or list continuation lines of a multi-line value. A file this
+// is asked to clean must start with a closed front matter block, and the
+// result must no longer mention any of the keys.
 export function stripFrontmatterKeys(text, keys, file) {
-  if (!text.startsWith("---\n")) return text;
-  const close = text.indexOf("\n---\n", 4);
-  if (close < 0) fail(file, "front matter is not closed");
-  const head = text.slice(4, close).split("\n");
+  const fm = frontmatterBlock(text);
+  if (fm === null) fail(file, "does not start with a front matter block");
+  if (fm.body === null) fail(file, "front matter is not closed");
   const kept = [];
   let dropping = false;
-  for (const line of head) {
-    const key = /^([A-Za-z0-9_-]+)\s*:/.exec(line);
+  for (const line of fm.body.split("\n")) {
+    const key = /^["']?([A-Za-z0-9_-]+)["']?\s*:/.exec(line);
     if (key) dropping = keys.includes(key[1]);
     else if (!/^(\s|-\s)/.test(line)) dropping = false;
     if (!dropping) kept.push(line);
   }
-  return `---\n${kept.join("\n")}${text.slice(close)}`;
+  const body = kept.join("\n");
+  for (const line of body.split("\n")) {
+    const key = FM_KEY.exec(line);
+    if (key && keys.includes(key[1])) fail(file, `front matter still sets ${key[1]} after stripping`);
+  }
+  return `${text.slice(0, fm.start)}${body}${text.slice(fm.end)}`;
+}
+
+// The headings of a Markdown text outside fenced code, in order, each with
+// the lines up to the next heading of any level (its own text) and up to the
+// next heading of the same or a higher level (its whole section).
+function sections(text) {
+  const lines = text.split("\n");
+  const mask = fenceMask(lines);
+  const at = lines.map((l, i) => (!mask[i] && headingLevel(l) ? i : -1)).filter((i) => i >= 0);
+  return at.map((start, k) => {
+    const level = headingLevel(lines[start]);
+    const ownEnd = k + 1 < at.length ? at[k + 1] : lines.length;
+    let end = lines.length;
+    for (const next of at.slice(k + 1)) {
+      if (headingLevel(lines[next]) <= level) {
+        end = next;
+        break;
+      }
+    }
+    return { heading: lines[start], own: lines.slice(start + 1, ownEnd).join("\n"), text: lines.slice(start + 1, end).join("\n") };
+  });
 }
 
 function applyEdits(text, entry) {
@@ -146,7 +204,7 @@ function applyEdits(text, entry) {
         out = dropSection(out, edit.heading, entry.from);
         break;
       case "drop-paragraph":
-        out = dropParagraph(out, edit.contains, entry.from);
+        out = dropParagraph(out, edit.paragraph, entry.from);
         break;
       case "replace":
         out = replaceOnce(out, edit.find, edit.with, entry.from);
@@ -155,10 +213,24 @@ function applyEdits(text, entry) {
         fail(entry.from, `unknown edit op "${edit.op}"`);
     }
   }
-  const lines = out.split("\n");
-  for (const heading of entry.requiredHeadings || []) {
-    if (findHeading(lines, heading).length !== 1) {
-      fail(entry.from, `required heading "${heading}" is missing from the generated copy`);
+  // The output is pinned, not only the anchors the edits rely on: the exact
+  // ordered list of headings (so a new or renamed section stops the build),
+  // no heading without text of its own, and phrases each section must keep.
+  const secs = sections(out);
+  if (entry.expectedHeadings) {
+    const got = secs.map((x) => x.heading);
+    if (JSON.stringify(got) !== JSON.stringify(entry.expectedHeadings)) {
+      fail(entry.from, `the generated copy has the headings ${JSON.stringify(got)}, expected exactly ${JSON.stringify(entry.expectedHeadings)}`);
+    }
+    for (const x of secs) {
+      if (x.own.trim() === "") fail(entry.from, `section "${x.heading}" is empty in the generated copy`);
+    }
+  }
+  for (const [heading, phrases] of Object.entries(entry.sectionMustContain || {})) {
+    const hit = secs.filter((x) => x.heading === heading);
+    if (hit.length !== 1) fail(entry.from, `sectionMustContain: expected exactly one heading "${heading}", found ${hit.length}`);
+    for (const phrase of phrases) {
+      if (!hit[0].text.includes(phrase)) fail(entry.from, `section "${heading}" of the generated copy does not contain "${phrase}"`);
     }
   }
   for (const needle of entry.mustNotContain || []) {
@@ -204,11 +276,22 @@ function renderReadme(config, root) {
     serverUrl: expectedServerUrl(config, root),
     privacyPolicyUrl: config.manifest.privacyPolicyUrl,
   };
-  const text = readFileSync(path.join(root, r.template), "utf8").replace(/\{\{(\w+)\}\}/g, (all, key) => {
+  const text = readSource(root, r.template).replace(/\{\{(\w+)\}\}/g, (all, key) => {
     if (!(key in values)) fail(r.template, `unknown placeholder ${all}`);
     return values[key];
   });
+  const left = /\{\{|\}\}/.exec(text);
+  if (left) fail(r.template, `"${left[0]}" is left in the rendered README`);
   return text;
+}
+
+function readSource(root, rel) {
+  try {
+    return normalizeText(readFileSync(path.join(root, rel), "utf8"));
+  } catch (err) {
+    if (err.code === "ENOENT") fail(rel, "is listed but does not exist");
+    throw err;
+  }
 }
 
 // Returns the generated files as a sorted array of [relativePath, contents].
@@ -221,7 +304,7 @@ export function generate({ root = repoRoot, config = loadConfig(root) } = {}) {
   put(config.manifest.to, buildManifest(config, root));
   put(config.readme.to, renderReadme(config, root));
   for (const entry of config.files) {
-    let text = readFileSync(path.join(root, entry.from), "utf8");
+    let text = readSource(root, entry.from);
     if (entry.stripFrontmatterKeys) text = stripFrontmatterKeys(text, entry.stripFrontmatterKeys, entry.from);
     text = applyEdits(text, entry);
     put(entry.to, text);
@@ -266,4 +349,15 @@ function main(argv) {
   }
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] || "").href) main(process.argv.slice(2));
+// True when this module is the script node was started with, also when it
+// was started through a symbolic link.
+export function isMain(moduleUrl) {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(moduleUrl));
+  } catch {
+    return false;
+  }
+}
+
+if (isMain(import.meta.url)) main(process.argv.slice(2));

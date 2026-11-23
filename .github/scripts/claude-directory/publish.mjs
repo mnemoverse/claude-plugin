@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Commits a built Claude directory tree to the branch claude-directory.
 //
-//   node scripts/claude-directory/publish.mjs --tree <dir> --ref <name> --sha <sha>
+//   node .github/scripts/claude-directory/publish.mjs --tree <dir> --ref <name> --sha <sha>
 //       [--tag <tag>] [--remote origin] [--branch claude-directory] [--dry-run]
 //
 // The new commit's tree is exactly <dir> (the plugin is the branch root, with
@@ -12,8 +12,13 @@
 // committed again. The working tree and the index of the checkout are not
 // touched; the commit is built in a temporary index.
 //
-// --tag checks that the tag is "v" plus the plugin version. --dry-run builds
-// the commit and prints it, without pushing.
+// --tag checks that the tag is "v" plus the plugin version, and refuses to
+// publish different files under a version the branch already has. --dry-run
+// builds the commit and prints it, without pushing.
+//
+// This file runs git, so it sits under .github/, outside the plugin packages
+// that other hosts build from the repository tree (see .clawhubignore).
+// test.mjs next to it tests these rules against a local bare repository.
 //
 // No dependencies. Node 20+.
 
@@ -21,9 +26,8 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
-import { checkTree, context } from "./check.mjs";
-import { repoRoot } from "./build.mjs";
+import { isMain, repoRoot } from "../../../scripts/claude-directory/build.mjs";
+import { checkTree, context } from "../../../scripts/claude-directory/check.mjs";
 import { compareVersions } from "./version.mjs";
 
 function args(argv) {
@@ -98,6 +102,9 @@ export function publish(opts, { cwd = repoRoot, log = console.log } = {}) {
       const previous = JSON.parse(git(["show", `${parent}:.claude-plugin/plugin.json`])).version;
       const order = compareVersions(version, previous);
       if (order < 0) throw new Error(`version ${version} is lower than ${previous} on ${opts.branch}`);
+      if (order === 0 && opts.tag) {
+        throw new Error(`${opts.branch} already has version ${version} with different files; tag ${opts.tag} cannot publish them, release a higher version`);
+      }
       if (order === 0) {
         log(`::warning::${opts.branch} already has version ${version} with different files; the directory expects a higher version for each release.`);
       }
@@ -121,7 +128,7 @@ export function publish(opts, { cwd = repoRoot, log = console.log } = {}) {
   }
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
+if (isMain(import.meta.url)) {
   try {
     publish(args(process.argv.slice(2)));
   } catch (err) {

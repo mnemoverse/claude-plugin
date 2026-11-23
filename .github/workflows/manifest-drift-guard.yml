@@ -28,7 +28,10 @@ jobs:
   # checks it against the directory's file, manifest and text rules, proves
   # with negative fixtures that every rule still rejects what it should, and
   # uploads the tree so a reviewer can see exactly what would be published.
+  # The daily schedule exists for drift in other repositories, which this job
+  # does not read, so it skips scheduled runs.
   claude-directory:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -39,6 +42,8 @@ jobs:
           node-version: 20
       - name: Build and check the Claude directory tree
         run: node scripts/claude-directory/check.mjs --out "$RUNNER_TEMP/claude-directory"
+      - name: Test the release rules and the entry points
+        run: node .github/scripts/claude-directory/test.mjs
       - name: Upload the built tree
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
