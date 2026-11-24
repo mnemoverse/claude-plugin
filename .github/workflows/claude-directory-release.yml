@@ -1,0 +1,152 @@
+name: Claude directory release
+
+# Publishes the lean build of this plugin for the Claude plugin directory,
+# which accepts only plugin files, to the branch claude-directory. That
+# branch holds the generated tree at its root and nothing else; each release
+# adds one commit whose parent is the previous release, pushed as a plain
+# fast-forward (never forced). The tree itself is never committed to main.
+#
+# Runs on a v* tag push, and by hand (workflow_dispatch) from any branch,
+# tag or commit. Whenever the source is a tag (a tag push, a dispatch started
+# on a tag, or a dispatched ref that names one), the tag must be v<version>,
+# point at the commit that was built, and not reuse a published version for
+# different files. On pull requests it runs the same steps as a dry run, plus
+# the publish rule tests: it builds the commit and prints it, without pushing
+# and without write access.
+#
+# The checkout keeps no credential: the job token is handed to git only in
+# the push step's environment.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag or commit to build from. Empty: the branch this run is started on."
+        required: false
+        default: ""
+        type: string
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    paths:
+      - ".claude-plugin/**"
+      - "skills/**"
+      - "commands/**"
+      - "LICENSE"
+      - "scripts/manifest-expected.json"
+      - "scripts/claude-directory/**"
+      - ".github/scripts/claude-directory/**"
+      - ".clawhubignore"
+      - ".github/workflows/claude-directory-release.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: claude-directory-release
+      cancel-in-progress: false
+    env:
+      SOURCE_REF: ${{ inputs.ref || github.ref_name }}
+      GIT_AUTHOR_NAME: github-actions[bot]
+      GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+      GIT_COMMITTER_NAME: github-actions[bot]
+      GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # The commit this run was started on, or the dispatched ref.
+          ref: ${{ inputs.ref || github.sha }}
+          # No credential is left in the checkout; only the push step below
+          # gets the token, through its own environment.
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+      - name: Build and check the Claude directory tree
+        run: node scripts/claude-directory/check.mjs --out "$RUNNER_TEMP/claude-directory"
+      - name: Resolve the release tag, if the source is one
+        id: tag
+        env:
+          INPUT_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          # A tag push, a dispatch started on a tag, or a dispatched ref that
+          # names a tag: each must be v<version> and point at the checkout.
+          tag=""
+          if [ -n "$INPUT_REF" ]; then
+            name="${INPUT_REF#refs/tags/}"
+            if [ "$name" != "$INPUT_REF" ] || git ls-remote --exit-code --tags origin "refs/tags/$name" >/dev/null; then
+              tag="$name"
+            fi
+          elif [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            tag="$GITHUB_REF_NAME"
+          fi
+          if [ -n "$tag" ]; then
+            # The commit the tag points at: the peeled line of an annotated
+            # tag, or the only line of a lightweight one.
+            target="$(git ls-remote --tags origin \
+              | awk -v t="refs/tags/$tag" '$2 == t || $2 == t "^{}" { print $1 }' | tail -n 1)"
+            if [ "$target" != "$(git rev-parse HEAD)" ]; then
+              echo "::error::tag $tag points at ${target:-nothing}, but the checkout is $(git rev-parse HEAD)"
+              exit 1
+            fi
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - name: Commit the tree to claude-directory and push it as a fast-forward
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # The token reaches git only through this step's environment, as an
+          # HTTP header for github.com; it is masked and never echoed.
+          basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          echo "::add-mask::$basic"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0="http.https://github.com/.extraheader"
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $basic"
+          tag_arg=()
+          if [ -n "$RELEASE_TAG" ]; then tag_arg=(--tag "$RELEASE_TAG"); fi
+          node .github/scripts/claude-directory/publish.mjs \
+            --tree "$RUNNER_TEMP/claude-directory" \
+            --ref "$SOURCE_REF" \
+            --sha "$(git rev-parse HEAD)" \
+            "${tag_arg[@]}"
+
+  dry-run:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: claude-directory-dry-run-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    env:
+      SOURCE_REF: ${{ github.head_ref }}
+      GIT_AUTHOR_NAME: github-actions[bot]
+      GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+      GIT_COMMITTER_NAME: github-actions[bot]
+      GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+      - name: Build and check the Claude directory tree
+        run: node scripts/claude-directory/check.mjs --out "$RUNNER_TEMP/claude-directory"
+      - name: Test the publish rules against a local bare repository
+        run: node .github/scripts/claude-directory/test.mjs
+      - name: Build the release commit without pushing
+        run: |
+          node .github/scripts/claude-directory/publish.mjs --dry-run \
+            --tree "$RUNNER_TEMP/claude-directory" \
+            --ref "$SOURCE_REF" \
+            --sha "$(git rev-parse HEAD)"

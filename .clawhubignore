@@ -1,0 +1,4 @@
+# Release tooling for the Claude plugin directory. It runs git (child_process)
+# in CI only and is not part of the plugin, so the ClawHub package leaves it
+# out. Everything else in the repository tree is packaged as before.
+.github/scripts/
